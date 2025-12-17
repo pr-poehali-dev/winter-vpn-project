@@ -1,20 +1,32 @@
 import { useEffect, useState } from 'react';
 
+const API_URL = 'https://functions.poehali.dev/9de999e4-b496-4459-8940-eae1aac6a0af';
+
+interface Server {
+  id: string;
+  name: string;
+  flag: string;
+  ping: number;
+  load: number;
+  ipAddress?: string;
+  currentUsers?: number;
+  maxUsers?: number;
+}
+
 const Index = () => {
   const [activeSection, setActiveSection] = useState('home');
   const [isConnected, setIsConnected] = useState(false);
   const [selectedServer, setSelectedServer] = useState('');
   const [connectionTime, setConnectionTime] = useState(0);
   const [dataUsed, setDataUsed] = useState({ download: 0, upload: 0 });
+  const [servers, setServers] = useState<Server[]>([]);
+  const [sessionToken, setSessionToken] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [userId] = useState(`user_${Math.random().toString(36).substring(7)}`);
 
-  const servers = [
-    { id: 'mc', name: 'Монако', flag: '🇲🇨', ping: 12, load: 23 },
-    { id: 'lu', name: 'Люксембург', flag: '🇱🇺', ping: 8, load: 45 },
-    { id: 'ch', name: 'Швейцария', flag: '🇨🇭', ping: 15, load: 67 },
-    { id: 'nl', name: 'Нидерланды', flag: '🇳🇱', ping: 10, load: 34 },
-    { id: 'sg', name: 'Сингапур', flag: '🇸🇬', ping: 45, load: 56 },
-    { id: 'is', name: 'Исландия', flag: '🇮🇸', ping: 25, load: 12 },
-  ];
+  useEffect(() => {
+    fetchServers();
+  }, []);
 
   useEffect(() => {
     const createSnowflake = () => {
@@ -57,16 +69,75 @@ const Index = () => {
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const toggleConnection = () => {
+  const fetchServers = async () => {
+    try {
+      const response = await fetch(`${API_URL}?action=servers`);
+      const data = await response.json();
+      if (data.servers) {
+        setServers(data.servers.map((s: any) => ({
+          id: s.id,
+          name: s.name,
+          flag: s.flag,
+          ping: s.ping,
+          load: s.load,
+          ipAddress: s.ipAddress,
+          currentUsers: s.currentUsers,
+          maxUsers: s.maxUsers
+        })));
+      }
+    } catch (error) {
+      console.error('Failed to fetch servers:', error);
+    }
+  };
+
+  const toggleConnection = async () => {
     if (!selectedServer && !isConnected) {
       alert('Выберите сервер');
       return;
     }
-    setIsConnected(!isConnected);
+
+    setLoading(true);
+
     if (isConnected) {
-      setConnectionTime(0);
-      setDataUsed({ download: 0, upload: 0 });
+      try {
+        const disconnectSound = new Audio('/disconnect.mp3');
+        disconnectSound.play().catch(() => {});
+        await fetch(`${API_URL}?action=disconnect`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionToken })
+        });
+        setIsConnected(false);
+        setConnectionTime(0);
+        setDataUsed({ download: 0, upload: 0 });
+        setSessionToken('');
+      } catch (error) {
+        console.error('Disconnect failed:', error);
+      }
+    } else {
+      try {
+        const connectSound = new Audio('/connect.mp3');
+        connectSound.play().catch(() => {});
+        const response = await fetch(`${API_URL}?action=connect`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, serverId: selectedServer })
+        });
+        const data = await response.json();
+        if (data.success) {
+          setIsConnected(true);
+          setSessionToken(data.sessionToken);
+        } else {
+          alert('Не удалось подключиться к серверу');
+        }
+      } catch (error) {
+        console.error('Connect failed:', error);
+        alert('Ошибка подключения');
+      }
     }
+
+    setLoading(false);
+    fetchServers();
   };
 
   const renderHome = () => (

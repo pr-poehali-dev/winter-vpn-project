@@ -1,0 +1,27 @@
+{
+  "name": "Snow VPN - Новогодний VPN",
+  "short_name": "Snow VPN",
+  "description": "Премиальный VPN-сервис с новогодней атмосферой. Безопасность и приватность в интернете.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1e2e",
+  "theme_color": "#0ea5e9",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["utilities", "productivity"],
+  "screenshots": [
+    {
+      "src": "/placeholder.svg",
+      "sizes": "540x720",
+      "type": "image/svg+xml",
+      "form_factor": "narrow"
+    }
+  ]
+}
